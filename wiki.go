@@ -89,6 +89,7 @@ func main() {
 	http.HandleFunc("/view/", makeHandler(viewHandler))
 	http.HandleFunc("/edit/", makeHandler(editHandler))
 	http.HandleFunc("/save/", makeHandler(saveHandler))
+	http.Handle("/", http.RedirectHandler("/view/FrontPage", 301))
 
 	if *addr {
 		l, err := net.Listen("tcp", "127.0.0.1:0")
