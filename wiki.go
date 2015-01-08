@@ -15,12 +15,24 @@ var (
 )
 
 type Page struct {
-	Title string
-	Body  []byte
+	Title    string
+	Body     []byte
+	HtmlBody template.HTML
 }
 
 var templates = template.Must(template.ParseFiles("tmpl/edit.html", "tmpl/view.html"))
 var validPath = regexp.MustCompile("^/(edit|save|view)/([a-zA-Z0-9]+)$")
+var linksPattern = regexp.MustCompile("\\[[a-zA-Z0-9]+\\]")
+
+func (p *Page) ParseWiki() []byte {
+	return linksPattern.ReplaceAllFunc(p.Body, replaceWikiLinks)
+}
+
+func replaceWikiLinks(src []byte) []byte {
+	stringSrc := string(src)
+	linkName := stringSrc[1 : len(stringSrc)-1]
+	return []byte("<a href='/view/" + linkName + "'>" + linkName + "</a>")
+}
 
 func getFilePath(title string) string {
 	return "data/" + title + ".txt"
@@ -39,6 +51,9 @@ func loadPage(title string) (*Page, error) {
 }
 
 func renderTemplate(w http.ResponseWriter, tmpl string, p *Page) {
+	if tmpl != "edit" {
+		p.HtmlBody = template.HTML(p.ParseWiki())
+	}
 	err := templates.ExecuteTemplate(w, tmpl+".html", p)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
